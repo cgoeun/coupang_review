@@ -10,7 +10,7 @@ import time
 
 
 # 데이터 저장 (dataToCsv)
-f = open('reviews.csv', 'w', encoding='utf-8-sig', newline='') # utf-8-sig에 대해 궁금하면 검색
+f = open('reviews.csv', 'a', encoding='utf-8-sig', newline='') # utf-8-sig에 대해 궁금하면 검색
 writer = csv.writer(f)
 # title = 'rating date seller content help'.split()
 # writer.writerow(title)
