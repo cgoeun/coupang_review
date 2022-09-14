@@ -7,6 +7,7 @@ from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
 import subprocess
 import time
+import random
 
 
 # 데이터 저장 (dataToCsv)
@@ -51,79 +52,80 @@ driver.implicitly_wait(5)
 #     pickle.dump(links, f) 
 # # 반복수집하지 않기 위해 pickle을 통해 link가 담긴 리스트를 파일로 저장해두었다.
 #########################################################################
+rand_value = random.randint(1, 5)
 
-while True:
+while 1:
     # 저장한 링크를 불러와서 해당 페이지에 접속하겠다.
     with open('links_8cate.pkl', 'rb') as f:
         links = pickle.load(f)
-    # # for test
+    # for test
     # links = ['https://www.coupang.com/vp/products/1557469098?vendorItemId=70653905177&sourceType=SDP_ALSO_VIEWED&searchId=a9a31a07e85e407ab87efe4f0fb120b9&rmdId=a9a31a07e85e407ab87efe4f0fb120b9&eventLabel=recommendation_widget_pc_sdp_001&platform=web&rmdABTestInfo=22922:A&rmdValue=p5428535616:vt-1.0.0:p1557469098&isAddedCart=',
     #          'https://www.coupang.com/vp/products/6645530847?itemId=15073113804&vendorItemId=82295358845&sourceType=CATEGORY&categoryId=178155&isAddedCart=']
-    print(len(links))
-
-    reviews = []
-    remove_links = 0
-    for idx, url in enumerate(links):
-        if idx == 1 : break
-        print(f'get url : {idx} in links ')
-        driver.get(url)
-        time.sleep(3)
-        path2 = '#btfTab > ul.tab-titles > li:nth-child(2)'
+    if not links : 
+        print('no links')
+        break
+    
+    print(f'get url')
+    driver.get(links[0])
+    time.sleep(1+rand_value/10)
+    path2 = '#btfTab > ul.tab-titles > li:nth-child(2)'
+    try:
         driver.find_element(By.CSS_SELECTOR, path2).click()  # 상품평 보기 클릭
-        print('reviews clicked')
-        time.sleep(1)
+    except: # 중고 상품 페이지의 경우 상품평 요소가 없다.
+        break
+    print('reviews clicked')
+    time.sleep(1+rand_value/10)
 
-        go = True
-        cnt = 0
-        i = 2
-        t = 0
-        while go:
-            print('start review crawling : page button click')
-            if t == 999 : go = False
+    cnt = 0
+    i = 2
+    t = 0
+    while 1:
+        print('review crawling : page button click')
+        if t == 999 : break # 한 상품의 최대 리뷰 개수를 제한하기 위해서 10000페이지 정도에서 cut하기로 임의로 정했다.
+        path3 = f'//*[@id="btfTab"]/ul[2]/li[2]/div/div[6]/section[4]/div[3]/button[{i}]'
+        if i == 13: # page 1 : button[2] ... page 10 : button[11], nxtPage : button[12] -> load page 1
+            i = 3
+            t +=1
             path3 = f'//*[@id="btfTab"]/ul[2]/li[2]/div/div[6]/section[4]/div[3]/button[{i}]'
-            if i == 13: # page 1 : button[2] ... page 10 : button[11], nxtPage : button[12] -> load page 1
-                i = 2
-                t +=1
-                path3 = f'//*[@id="btfTab"]/ul[2]/li[2]/div/div[6]/section[4]/div[3]/button[{i}]'
-            try:
-                driver.find_element(By.XPATH, path3).click()
-            except : 
-                # remove_links+=1
-                break
-            time.sleep(1)
-            print('start review crawling : soup review data 5')
-            html = driver.page_source
-            soup = BeautifulSoup(html, 'html.parser')
-            data = soup.select(".sdp-review__article__list")
-            print('get review 5, page', i-1)
-            # 데이터, 즉 한 페이지 당 리뷰의 개수는 5개다.
-            i += 1
-            for inx, one in enumerate(data):
-                if len(one) > 8:
-                    rv = Review()   
-                    print(f'data 있음 {inx}')
-                    rv.rating = int(one.select_one('.sdp-review__article__list__info__product-info__star-orange')['data-rating'])
-                    rv.date = one.select_one('.sdp-review__article__list__info__product-info__reg-date').get_text()
-                    rv.seller = one.select_one('.sdp-review__article__list__info__product-info__seller_name').get_text().strip()[5:]
-                    try: rv.content = one.select('.sdp-review__article__list__headline')[0].text.strip() + ' '
-                    except: pass
-                    try: rv.content += one.select_one('.sdp-review__article__list__review').get_text().strip().replace('\n', ' ')
-                    except: pass
-                    try: rv.help = int(one.select_one('.js_reviewArticleHelpfulCount').get_text())
-                    except: pass
+        try:
+            driver.find_element(By.XPATH, path3).click()
+        except : 
+            break
+        time.sleep(rand_value)
+        print('review crawling : soup')
+        html = driver.page_source
+        soup = BeautifulSoup(html, 'html.parser')
+        data = soup.select(".sdp-review__article__list")
+        print('get review 5, page', i-1)
+        # 데이터, 즉 한 페이지 당 리뷰의 개수는 5개다.
+        i += 1
+        for inx, one in enumerate(data):
+            if len(one) > 8: # 리뷰 content가 없는 경우 one의 길이가 7이었다.
+                time.sleep(rand_value/10)
+                rv = Review()   
+                print(f'data 있음 {inx}')
+                rv.rating = int(one.select_one('.sdp-review__article__list__info__product-info__star-orange')['data-rating'])
+                rv.date = one.select_one('.sdp-review__article__list__info__product-info__reg-date').get_text()
+                rv.seller = one.select_one('.sdp-review__article__list__info__product-info__seller_name').get_text().strip()[5:]
+                try: rv.content = one.select('.sdp-review__article__list__headline')[0].text.strip() + ' '
+                except: pass
+                try: rv.content += one.select_one('.sdp-review__article__list__review').get_text().strip().replace('\n', ' ')
+                except: pass
+                try: rv.help = int(one.select_one('.js_reviewArticleHelpfulCount').get_text())
+                except: pass
+                if len(rv.content)>20 :
                     print(rv)
-                    if len(rv.content)>0 :writer.writerow(rv)
+                    writer.writerow(rv)
+                cnt = 0
+            else:
+                cnt += 1
+                print(f'data 없음 {cnt}')
+                if cnt == 2:
+                    i = 2
                     cnt = 0
-                else:
-                    cnt += 1
-                    print(f'data 없음 {cnt}')
-                    if cnt == 2:
-                        i = 2
-                        go = False
-                        remove_links+=1
-                        cnt = 0
-            print('리뷰 end')
-        print('도착~~')
+                    break
+        print('리뷰 end')
+    print('도착~~')
     f.close()
     del links[0]
     with open('links_8cate.pkl', 'wb') as f2:
