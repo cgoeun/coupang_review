@@ -11,7 +11,8 @@ import random
 
 
 # 데이터 저장 (dataToCsv)
-f = open('reviews.csv', 'a', encoding='utf-8-sig', newline='') # utf-8-sig에 대해 궁금하면 검색
+f = open('test_review.csv', 'w', encoding='utf-8-sig', newline='')
+# f = open('reviews.csv', 'a', encoding='utf-8-sig', newline='') # utf-8-sig에 대해 궁금하면 검색
 writer = csv.writer(f)
 # title = 'rating date seller content help'.split()
 # writer.writerow(title)
@@ -56,8 +57,9 @@ rand_value = random.randint(1, 5)
 
 while 1:
     # 저장한 링크를 불러와서 해당 페이지에 접속하겠다.
-    with open('links_8cate.pkl', 'rb') as f:
-        links = pickle.load(f)
+    # with open('links_8cate.pkl', 'rb') as f:
+    #     links = pickle.load(f)
+    links = ['https://www.coupang.com/vp/products/6482494297?itemId=14197242020&vendorItemId=81442840108&sourceType=CAMPAIGN&campaignId=82&categoryId=497041&isAddedCart=#sdpReview']
     # for test
     # links = ['https://www.coupang.com/vp/products/1557469098?vendorItemId=70653905177&sourceType=SDP_ALSO_VIEWED&searchId=a9a31a07e85e407ab87efe4f0fb120b9&rmdId=a9a31a07e85e407ab87efe4f0fb120b9&eventLabel=recommendation_widget_pc_sdp_001&platform=web&rmdABTestInfo=22922:A&rmdValue=p5428535616:vt-1.0.0:p1557469098&isAddedCart=',
     #          'https://www.coupang.com/vp/products/6645530847?itemId=15073113804&vendorItemId=82295358845&sourceType=CATEGORY&categoryId=178155&isAddedCart=']
@@ -79,9 +81,17 @@ while 1:
     cnt = 0
     i = 2
     t = 0
-    while 1:
+    go = True
+    while go:
         print('review crawling : page button click')
-        if t == 999 : break # 한 상품의 최대 리뷰 개수를 제한하기 위해서 10000페이지 정도에서 cut하기로 임의로 정했다.
+        if t == 99 : break # 한 상품의 최대 리뷰 개수를 제한하기 위해서 1000페이지 정도에서 cut하기로 임의로 정했다.
+        if i == 12:
+            try:
+                driver.find_element(By.CSS_SELECTOR, path3).click()
+                i = 2
+                t +=1
+            except : 
+                break
         path3 = f'//*[@id="btfTab"]/ul[2]/li[2]/div/div[6]/section[4]/div[3]/button[{i}]'
         if i == 13: # page 1 : button[2] ... page 10 : button[11], nxtPage : button[12] -> load page 1
             i = 3
@@ -91,7 +101,7 @@ while 1:
             driver.find_element(By.XPATH, path3).click()
         except : 
             break
-        time.sleep(rand_value)
+        # time.sleep(rand_value)
         print('review crawling : soup')
         html = driver.page_source
         soup = BeautifulSoup(html, 'html.parser')
@@ -123,7 +133,7 @@ while 1:
                 if cnt == 2:
                     i = 2
                     cnt = 0
-                    break
+                    go = False
         print('리뷰 end')
     print('도착~~')
     f.close()
