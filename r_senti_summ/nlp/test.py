@@ -26,7 +26,7 @@ def get_reviews(url):
   driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
   rand_value = random.randint(1, 5)
   
-  rv_df = pd.DataFrame(columns=['star','date','store','review','help'])
+  rv_df = pd.DataFrame(columns=['star','date','review','help'])
   driver.get(str(url))
   driver.implicitly_wait(4)
   time.sleep(1+rand_value/10)
@@ -61,7 +61,6 @@ def get_reviews(url):
               print(f'data 있음 {inx}')
               rv.star = int(one.select_one('.sdp-review__article__list__info__product-info__star-orange')['data-rating'])
               rv.date = one.select_one('.sdp-review__article__list__info__product-info__reg-date').get_text()
-              rv.store = one.select_one('.sdp-review__article__list__info__product-info__seller_name').get_text().strip()[5:]
               try: rv.review = one.select('.sdp-review__article__list__headline')[0].text.strip() + ' '
               except: pass
               try: rv.review += one.select_one('.sdp-review__article__list__review').get_text().strip().replace('\n', ' ')
@@ -108,8 +107,8 @@ def tokenize(new_sentence):
 
 def positive_or_negative(url):
   rv_df = get_reviews(url)
-  pos_df = pd.DataFrame(columns=['star','date','store','review','help'])
-  neg_df = pd.DataFrame(columns=['star','date','store','review','help'])
+  pos_df = pd.DataFrame(columns=['star','date','review','help'])
+  neg_df = pd.DataFrame(columns=['star','date','review','help'])
   for idx, t in enumerate(rv_df['review']):
     try:
       score = float(model1.predict(tokenize(t)))
@@ -166,7 +165,7 @@ def summarize_list(list):
       eos_token_id=model.config.eos_token_id,
       length_penalty=2.0,
       max_length=40,
-      min_length=10,
+      min_length=20,
       num_beams=4,
   )
   return tokenizer.decode(summary_text_ids[0], skip_special_tokens=True)
@@ -176,7 +175,7 @@ def summarize(url):
   # first_start_time = time.time()
   pos_df, neg_df = positive_or_negative(url)
 
-  p_sample = pos_df['review'].sample(frac=0.1, random_state=42)
+  p_sample = pos_df['review'].sample(frac=0.2, random_state=42)
   n_sample = neg_df['review'].sample(frac=1, random_state=42)
   
   pos_list = p_sample.tolist()
