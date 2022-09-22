@@ -16,6 +16,12 @@ import tensorflow as tf
 from transformers import PreTrainedTokenizerFast
 from transformers import BartForConditionalGeneration
 
+def find_text(text):
+    pattern = '[^\w\s]'         # 특수기호제거'[^\w\sㄱ-ㅎㅏ-ㅣ]' 
+    text = re.sub(pattern=pattern, repl='', string=text)
+    text = re.sub(pattern='[\s]+', repl=' ', string=text)
+
+    return text   
 
 def get_reviews(url):
   subprocess.Popen(
@@ -24,7 +30,7 @@ def get_reviews(url):
   options.add_experimental_option("debuggerAddress", "127.0.0.1:9222")
   driver = webdriver.Chrome(ChromeDriverManager().install(), options=options)
 
-  rv_df = pd.DataFrame(columns=['star','date','store','review','help'])
+  rv_df = pd.DataFrame(columns=['star','date','review','help'])
   driver.get(url)
   driver.implicitly_wait(4)
   time.sleep(1+random.randint(1, 5)/10)
@@ -68,7 +74,7 @@ def get_reviews(url):
               except: pass
               cnt = 0
               rv_df.loc[k] = [rv.star, rv.date, rv.review, rv.help]
-              if k == 19 : 
+              if k == 9 : 
                 go = False
                 driver.close()
                 break
@@ -80,37 +86,41 @@ def get_reviews(url):
                   cnt = 0
                   go = False
                   driver.close()
+                  
+  rv_df['review'] = rv_df['review'].apply(find_text)
  
   return rv_df
  
 
-max_len = 200
-model1 = tf.keras.models.load_model('./nlp/model1/okt_best_model.h5')
-okt = Okt()
-with open('./nlp/model1/tokenizer.pickle', 'rb') as handle:
-    tokenizer1 = pickle.load(handle)
-stopwords = ['도', '는', '다', '의', '가', '이', '은', '한', '에', '하', '고', '을', '를', '인', '듯', '과', '와', '네', '들', '듯', '지', '임', '게']
+# max_len = 200
+# model1 = tf.keras.models.load_model('./nlp/model1/okt_best_model.h5')
+# okt = Okt()
+# with open('./nlp/model1/tokenizer.pickle', 'rb') as handle:
+#     tokenizer1 = pickle.load(handle)
+# stopwords = ['도', '는', '다', '의', '가', '이', '은', '한', '에', '하', '고', '을', '를', '인', '듯', '과', '와', '네', '들', '듯', '지', '임', '게']
 
-def tokenize(new_sentence):
-    new_sentence = re.sub(r'[^ㄱ-ㅎㅏ-ㅣ가-힣 ]','', new_sentence)
-    new_sentence = okt.morphs(new_sentence)
-    new_sentence = [word for word in new_sentence if not word in stopwords]
-    encoded = tokenizer1.texts_to_sequences([new_sentence])
-    pad_new = tf.keras.preprocessing.sequence.pad_sequences(encoded, maxlen = max_len)
-    return pad_new
+# def tokenize(new_sentence):
+#     new_sentence = re.sub(r'[^ㄱ-ㅎㅏ-ㅣ가-힣 ]','', new_sentence)
+#     new_sentence = okt.morphs(new_sentence)
+#     new_sentence = [word for word in new_sentence if not word in stopwords]
+#     encoded = tokenizer1.texts_to_sequences([new_sentence])
+#     pad_new = tf.keras.preprocessing.sequence.pad_sequences(encoded, maxlen = max_len)
+#     return pad_new
 
 def positive_or_negative(rv_df):
-  pos_df = pd.DataFrame(columns=['star','date','store','review','help'])
-  neg_df = pd.DataFrame(columns=['star','date','store','review','help'])
-  for idx, t in enumerate(rv_df['review']):
-    try:
-      score = float(model1.predict(tokenize(t)))
-      if score > 0.5 :
+  pos_df = pd.DataFrame(columns=['star','date','review','help'])
+  neg_df = pd.DataFrame(columns=['star','date','review','help'])
+  for idx, t in enumerate(rv_df['star']):
+    if t == 5 :
+  # for idx, t in enumerate(rv_df['review']):
+  #   try:
+  #     score = float(model1.predict(tokenize(t)))
+  #     if score > 0.5 :
         pos_df = pos_df.append(rv_df.iloc[idx,:])
-      else : 
+    elif t == 1 or t == 2 : 
         neg_df = neg_df.append(rv_df.iloc[idx,:])
-    except : pass
-      
+  # except : pass
+
   return pos_df, neg_df
 
 tokenizer = PreTrainedTokenizerFast.from_pretrained("ainize/kobart-news")
@@ -126,14 +136,14 @@ def summarize_list(list):
       eos_token_id=model.config.eos_token_id,
       length_penalty=2.0,
       max_length=40,
-      min_length=10,
+      min_length=20,
       num_beams=4,
   )
   return tokenizer.decode(summary_text_ids[0], skip_special_tokens=True)
    
    
 def summarize(pos_df, neg_df):
-  p_sample = pos_df['review'].sample(frac=1, random_state=42)
+  p_sample = pos_df['review'].sample(frac=0.3, random_state=42)
   n_sample = neg_df['review'].sample(frac=1, random_state=42)
   
   pos_list = p_sample.tolist()
@@ -142,5 +152,5 @@ def summarize(pos_df, neg_df):
   result_pos = summarize_list(pos_list)
   result_neg = summarize_list(neg_list)
   
-  return len(pos_list), len(neg_list), result_pos, result_neg
+  return len(pos_df), len(neg_df), result_pos, result_neg
 

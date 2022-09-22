@@ -1,3 +1,4 @@
+from operator import index
 from flask import Flask, request, render_template, jsonify
 import nlp
 from flask_socketio import SocketIO
@@ -40,7 +41,7 @@ def handle_crawlingAddr_event(json):
 
 @socketio.on('goPNA')
 def handle_goPNA_event():
-    rv_df = pd.read_csv('df.csv')
+    rv_df = pd.read_csv('df.csv', index_col=0)
     pos_df, neg_df = nlp.positive_or_negative(rv_df)
     pos_df.to_csv('pos_df.csv')
     neg_df.to_csv('neg_df.csv')
@@ -48,8 +49,8 @@ def handle_goPNA_event():
     
 @socketio.on('goSummary')
 def handle_goSummary_event():
-    pos_df = pd.read_csv('pos_df.csv')
-    neg_df = pd.read_csv('neg_df.csv')
+    pos_df = pd.read_csv('pos_df.csv', index_col=0)
+    neg_df = pd.read_csv('neg_df.csv', index_col=0)
  
     len_pos, len_neg, result_pos, result_neg = nlp.summarize(pos_df, neg_df)
     print( len_pos, len_neg, result_pos, result_neg)
@@ -58,8 +59,8 @@ def handle_goSummary_event():
         "len_neg":len_neg, 
         "result_pos":result_pos.strip(), 
         "result_neg":result_neg.strip(),
-        "pos_json":pos_df.to_json(orient="values"),
-        "neg_json":neg_df.to_json(orient="values")
+        "pos_json":pos_df.to_json(),
+        "neg_json":neg_df.to_json()
     } )
     
 if __name__ == '__main__':

@@ -44,14 +44,39 @@
         });
         socket.on('goSummaryClear', function (data) {
             let { len_pos, len_neg, result_pos, result_neg, pos_json, neg_json } = data
+            let pos = JSON.parse(pos_json)
+            let neg = JSON.parse(neg_json)
 
-            $('#progressView').html('분석 완료')
+            $('#progressView').html('분석 완료                  *강사님 도와주셔서 감사합니다*')
             $('#len_pos').html(`${len_pos}`)
             $('#len_neg').html(`${len_neg}`)
-            $('#result_pos').html(`${result_pos}`)
-            $('#result_neg').html(`${result_neg}`)
-            $('#neg_json').html(`${neg_json}`)
-            $('#pos_json').val(pos_json)
+            if(len_pos != 0){
+            $('#result_pos').html(`긍정 리뷰 ${len_pos}건에 대한 요약입니다. <br>${result_pos}`)}
+            if (len_neg != 0) {
+            $('#result_neg').html(`부정 리뷰 ${len_neg}건에 대한 요약입니다. <br>${result_neg}`)}
+            $('#neg_json').html(`<tr>
+                <td>${neg.star['0']}</td><td>${neg.date['0']}</td>
+                                <td>${neg.review['0']}</td><td>${neg.help['0']}</td></tr>
+                              <tr>
+                <td>${neg.star['1']}</td><td>${neg.date['1']}</td>
+                                <td>${neg.review['1']}</td><td>${neg.help['1']}</td></tr><tr>
+                <td>${neg.star['2']}</td><td>${neg.date['2']}</td>
+                                <td>${neg.review['2']}</td><td>${neg.help['2']}</td></tr><tr>
+                <td>${neg.star['3']}</td><td>${neg.date['3']}</td>
+                                <td>${neg.review['3']}</td><td>${neg.help['3']}</td></tr>
+            `)
+            $('#pos_json').html(`<tr>
+                <td>${pos.star['0']}</td><td>${pos.date['0']}</td>
+                                <td>${pos.review['0']}</td><td>${pos.help['0']}</td></tr>
+                              <tr>
+                <td>${pos.star['1']}</td><td>${pos.date['1']}</td>
+                                <td>${pos.review['1']}</td><td>${pos.help['1']}</td></tr><tr>
+                <td>${pos.star['2']}</td><td>${pos.date['2']}</td>
+                                <td>${pos.review['2']}</td><td>${pos.help['2']}</td></tr><tr>
+                <td>${pos.star['3']}</td><td>${pos.date['3']}</td>
+                                <td>${pos.review['3']}</td><td>${pos.help['3']}</td></tr>
+            `)
+            
             // console.log( data );
         });
     </script>
@@ -81,7 +106,7 @@
                 </form>
                 <div id="progressView"></div>
 
-                <div style="padding: 15px;"></div>
+                <div style="padding: 15px;"> * 감성 분석 모델은 에러로 인해 웹에 넣지 못했습니다 ㅠㅠ *<br> 진행되지 않고 너무 오래 걸리는 듯이 멈춰 있어서 원인도 모르겠습니다 <br> 시연을 위해서 대신 별점 기준으로 분류됩니다!! </div>
                 <h3 id="ratio_num">
                     긍정적인 리뷰 수 : <span id="len_pos"></span> / 부정적인 리뷰 수 : <span id="len_neg"></span>
                 </h3>
@@ -112,7 +137,7 @@
                                         </tr>
                                     </thead>
                                     <tbody id="pos_json">
-                                        <script>
+                                        <!-- <script>
                                             for (let i = 0; i < pos_json.length; i++) {
                                                 document.write('<tr>');
                                                 for (let j = 0; j < 4; j++) {
@@ -122,7 +147,7 @@
                                                 }
                                                 document.write('</tr>')
                                             }
-                                        </script>
+                                        </script> -->
                                     </tbody>
                                 </table>
                             </div>
@@ -167,17 +192,18 @@
                 <blockquote class="blockquote">
                     <p class="mb-0">
                     </p>
-                    <footer class="blockquote-footer">
-                        긍정 리뷰 {{len_pos}}건에 대한 요약입니다.
+                    <footer class="blockquote-footer" id="result_pos">
+                        긍정 리뷰에 대한 요약입니다.
                     </footer>
                 </blockquote>
                 <blockquote class="blockquote">
                     <p class="mb-0">
                     </p>
-                    <footer class="blockquote-footer">
-                        부정 리뷰 {{len_neg}}건에 대한 요약입니다.
+                    <footer class="blockquote-footer" id="result_neg">
+                        부정 리뷰에 대한 요약입니다.
                     </footer>
                 </blockquote>
+                 <small>(리뷰 5개 넣으니까 터지더라구요...)</small>
             </div>
         </div>
     </div>
@@ -199,7 +225,7 @@
             console.log('aaaaa')
             e.preventDefault()
             socket.emit('crawlingAddr', { addr: $('#linkInput').val() });
-            $('#progressView').append('리뷰를 실시 수집중')
+            $('#progressView').append('리뷰를 수집 중입니다... (테스트용 10개)')
 
             return false
         });
