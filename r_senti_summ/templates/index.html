@@ -1,0 +1,209 @@
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>리뷰 감성 분석 및 키워드 추출 및 요약</title>
+    <link rel="stylesheet" href="/static/fonts/glyphicons-halflings-regular.eot">
+    <link rel="stylesheet" href="/static/fonts/glyphicons-halflings-regular.svg">
+    <link rel="stylesheet" href="/static/fonts/glyphicons-halflings-regular.ttf">
+    <link rel="stylesheet" href="/static/fonts/glyphicons-halflings-regular.woff">
+    <link rel="stylesheet" href="/static/fonts/glyphicons-halflings-regular.woff2">
+
+    <link rel="stylesheet" href="/static/css/bootstrap-grid.css">
+    <link rel="stylesheet" href="/static/css/bootstrap-grid.css.map">
+    <link rel="stylesheet" href="/static/css/bootstrap-grid.min.css">
+    <link rel="stylesheet" href="/static/css/bootstrap-grid.min.css.map">
+    <link rel="stylesheet" href="/static/css/bootstrap-reboot.css">
+    <link rel="stylesheet" href="/static/css/bootstrap-reboot.css.map">
+    <link rel="stylesheet" href="/static/css/bootstrap-reboot.min.css">
+    <link rel="stylesheet" href="/static/css/bootstrap-reboot.min.css.map">
+    <link rel="stylesheet" href="/static/css/bootstrap.css">
+    <link rel="stylesheet" href="/static/css/bootstrap.css.map">
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css">
+    <link rel="stylesheet" href="/static/css/bootstrap.min.css.map">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <!-- <script src="https://cdn.socket.io/4.5.0/socket.io.min.js"
+        integrity="sha384-7EyYLQZgWBi67fBtVxw60/OWl1kjsfrPFcaU0pp0nAh+i8FD068QogUvg85Ewy1k"
+        crossorigin="anonymous"></script> -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"
+        integrity="sha512-q/dWJ3kcmjBLU4Qc47E4A9kTB4m3wuTY7vkFJDTZKjTs8jhyGQnaUrxa0Ytd0ssMZhbNua9hE+E7Qv1j+DyZwA=="
+        crossorigin="anonymous"></script>
+    <script type="text/javascript" charset="utf-8">
+        var socket = io();
+        socket.on('connect', function () {
+            socket.emit('my event', { data: 'I\'m connected!' });
+        });
+        socket.on('crawlingClear', function () {
+            $('#progressView').html('크롤링 완료 <br> 감성 분석 시작')
+            socket.emit('goPNA');
+        });
+        socket.on('PNAClear', function () {
+            $('#progressView').html('감성분석 완료 <br> 요약 시작')
+            socket.emit('goSummary');
+        });
+        socket.on('goSummaryClear', function (data) {
+            let { len_pos, len_neg, result_pos, result_neg, pos_json, neg_json } = data
+
+            $('#progressView').html('분석 완료')
+            $('#len_pos').html(`${len_pos}`)
+            $('#len_neg').html(`${len_neg}`)
+            $('#result_pos').html(`${result_pos}`)
+            $('#result_neg').html(`${result_neg}`)
+            $('#neg_json').html(`${neg_json}`)
+            $('#pos_json').val(pos_json)
+            // console.log( data );
+        });
+    </script>
+</head>
+
+<body>
+    <div class="container-fluid">
+        <div class="row">
+            <div class="col-md-12">
+                <div style="padding: 10px; height: 30px;"></div>
+                <div class="alert alert-dismissable alert-info">
+                    <h4>
+                        쿠팡 리뷰 감성 분석 및 요약
+                    </h4>
+                </div>
+                <form action='/' method="POST" role="form">
+                    <div class="form-group">
+                        <label for="linkInput">
+                            <p>아래 칸에 쿠팡 상품 페이지 주소를 입력(복붙)하면 리뷰를 가져와 분석합니다. <br>
+                                (예시 : https://www.coupang.com/vp/products/6482494297 (?뒤에 붙는 정보는 있어도 없어도 상관없습니다.)) </p>
+                        </label>
+                        <input type="text" class="form-control" id="linkInput" name="linkInput" />
+                    </div>
+                    <button type="submit" class="btn btn-primary" id="sendBtn">
+                        확인
+                    </button>
+                </form>
+                <div id="progressView"></div>
+
+                <div style="padding: 15px;"></div>
+                <h3 id="ratio_num">
+                    긍정적인 리뷰 수 : <span id="len_pos"></span> / 부정적인 리뷰 수 : <span id="len_neg"></span>
+                </h3>
+                <div style="padding: 10px;"></div>
+                <div id="card-767573">
+                    <div class="card">
+                        <div class="card-header">
+                            <a class="card-link collapsed" data-toggle="collapse" data-parent="#card-767573"
+                                href="#card-element-670280">긍정 리뷰 확인하기 </a>
+                        </div>
+                        <div id="card-element-670280" class="collapse">
+                            <div class="card-body table-responsive" style="overflow:auto; height:200px;">
+                                <table class="table table-bordered table-striped table-sm w-auto">
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                                별점
+                                            </th>
+                                            <th>
+                                                작성날짜
+                                            </th>
+                                            <th>
+                                                리뷰
+                                            </th>
+                                            <th>
+                                                도움 수
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="pos_json">
+                                        <script>
+                                            for (let i = 0; i < pos_json.length; i++) {
+                                                document.write('<tr>');
+                                                for (let j = 0; j < 4; j++) {
+                                                    document.write('<td>');
+                                                    document.write(pos_json[i][j]);
+                                                    document.write('</td>');
+                                                }
+                                                document.write('</tr>')
+                                            }
+                                        </script>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="padding: 10px;"></div>
+                    <div class="card">
+                        <div class="card-header">
+                            <a class="card-link collapsed" data-toggle="collapse" data-parent="#card-767573"
+                                href="#card-element-434381">부정 리뷰 확인하기</a>
+                        </div>
+                        <div id="card-element-434381" class="collapse">
+                            <div class="card-body table-responsive" style="overflow:auto; height:200px;">
+                                <table class="table table-bordered table-striped table-sm w-auto">
+                                    <thead>
+                                        <tr>
+                                            <th>
+                                                별점
+                                            </th>
+                                            <th>
+                                                작성날짜
+                                            </th>
+                                            <th>
+                                                리뷰
+                                            </th>
+                                            <th>
+                                                도움 수
+                                            </th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="neg_json">
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div style="padding: 10px; height: 30px;"></div>
+                <h3>
+                    긍정/부정별 한 줄 리뷰 요약 정보입니다.
+                </h3>
+                <blockquote class="blockquote">
+                    <p class="mb-0">
+                    </p>
+                    <footer class="blockquote-footer">
+                        긍정 리뷰 {{len_pos}}건에 대한 요약입니다.
+                    </footer>
+                </blockquote>
+                <blockquote class="blockquote">
+                    <p class="mb-0">
+                    </p>
+                    <footer class="blockquote-footer">
+                        부정 리뷰 {{len_neg}}건에 대한 요약입니다.
+                    </footer>
+                </blockquote>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/js/jquery.min.js"></script>
+    <script src="/static/js/bootstrap.min.js"></script>
+    <script src="/static/js/popper.min.js"></script>
+    <script src="/static/js/scripts.js"></script>
+
+    <script>
+        $('#linkInput').on('keypress', (e) => {
+            if (e.keyCode == 13) {
+                $('#sendBtn').trigger('click')
+            };
+        });
+    </script>
+    <script>
+        $('form').on('submit', e => {
+            console.log('aaaaa')
+            e.preventDefault()
+            socket.emit('crawlingAddr', { addr: $('#linkInput').val() });
+            $('#progressView').append('리뷰를 실시 수집중')
+
+            return false
+        });
+    </script>
+</body>
+
+</html>
